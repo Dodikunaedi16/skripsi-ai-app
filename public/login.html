@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#6d5dfc" />
+  <title>Masuk | MasdodAI</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body class="auth-page">
+  <main class="auth-shell">
+    <section class="auth-visual">
+      <div class="brand-lockup"><span class="brand-mark">✦</span><span>MasdodAI</span></div>
+      <div class="visual-copy">
+        <span class="eyebrow">ASISTEN AKADEMIK PRIBADI</span>
+        <h1>Kerjakan skripsi tanpa harus mulai dari halaman kosong.</h1>
+        <p>Diskusi topik, susun kerangka, rapikan tulisan, dan analisis dokumen bersama asisten AI dalam satu ruang kerja.</p>
+      </div>
+      <div class="feature-grid">
+        <div><strong>01</strong><span>Skripsi & penelitian</span></div>
+        <div><strong>02</strong><span>Artikel jurnal</span></div>
+        <div><strong>03</strong><span>Dokumen & file</span></div>
+        <div><strong>04</strong><span>Riwayat percakapan</span></div>
+      </div>
+      <div class="visual-orb orb-one"></div><div class="visual-orb orb-two"></div>
+    </section>
+
+    <section class="auth-panel">
+      <div class="auth-card">
+        <div class="mobile-brand"><span class="brand-mark">✦</span> MasdodAI</div>
+        <span class="eyebrow purple">SELAMAT DATANG KEMBALI</span>
+        <h2>Masuk ke ruang kerja</h2>
+        <p class="auth-subtitle">Lanjutkan percakapan dan pekerjaan akademikmu.</p>
+
+        <div class="error-msg" id="errorMsg" role="alert"></div>
+
+        <a href="/api/auth/google" class="btn-google">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.23c0-.79-.07-1.55-.23-2.27H12v4.3h5.38a4.6 4.6 0 0 1-1.99 3.02v2.51h3.22c1.89-1.74 2.99-4.31 2.99-7.56z"/><path fill="#34A853" d="M12 22c2.7 0 4.96-.9 6.61-2.45l-3.22-2.51c-.9.6-2.05.96-3.39.96-2.61 0-4.82-1.76-5.61-4.13H3.06v2.59A10 10 0 0 0 12 22z"/><path fill="#FBBC05" d="M6.39 13.87A6 6 0 0 1 6.07 12c0-.65.11-1.28.32-1.87V7.54H3.06A10 10 0 0 0 2 12c0 1.61.39 3.13 1.06 4.46l3.33-2.59z"/><path fill="#EA4335" d="M12 6c1.47 0 2.79.51 3.83 1.51l2.87-2.87C16.96 2.96 14.7 2 12 2a10 10 0 0 0-8.94 5.54l3.33 2.59C7.18 7.76 9.39 6 12 6z"/></svg>
+          Lanjutkan dengan Google
+        </a>
+
+        <div class="auth-divider"><span>atau masuk dengan nomor HP</span></div>
+
+        <form id="loginForm" class="auth-form">
+          <label class="field"><span>Nomor HP</span><input type="tel" id="phone_number" autocomplete="tel" inputmode="tel" placeholder="08xxxxxxxxxx" required /></label>
+          <label class="field"><span>Password</span><input type="password" id="password" autocomplete="current-password" placeholder="Masukkan password" required /></label>
+          <button type="submit" class="btn-primary" id="submitBtn"><span>Masuk ke Akun</span><span>→</span></button>
+        </form>
+
+        <p class="switch-link">Belum punya akun? <a href="/register.html">Buat akun baru</a></p>
+        <p class="security-note">🔒 Data akun dan percakapanmu hanya digunakan untuk menjalankan aplikasi.</p>
+      </div>
+    </section>
+  </main>
+  <script src="/js/auth.js"></script>
+  <script>
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      await submitAuth("/api/auth/login", {
+        phone_number: document.getElementById("phone_number").value.trim(),
+        password: document.getElementById("password").value
+      });
+    });
+  </script>
+</body>
+</html>

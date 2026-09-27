@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#6d5dfc" />
+  <title>Daftar | MasdodAI</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body class="auth-page">
+  <main class="auth-shell auth-register">
+    <section class="auth-visual">
+      <div class="brand-lockup"><span class="brand-mark">✦</span><span>MasdodAI</span></div>
+      <div class="visual-copy">
+        <span class="eyebrow">MULAI PERJALANAN AKADEMIK</span>
+        <h1>Satu ruang kerja untuk semua tugas akademikmu.</h1>
+        <p>Buat akun gratis dan simpan percakapan, dokumen, serta progres penelitianmu dalam satu tempat.</p>
+      </div>
+      <div class="quote-card"><span>“</span><p>Ide penelitian yang baik tidak harus lahir sempurna. Yang penting, mulai dulu.</p></div>
+      <div class="visual-orb orb-one"></div><div class="visual-orb orb-two"></div>
+    </section>
+
+    <section class="auth-panel">
+      <div class="auth-card">
+        <div class="mobile-brand"><span class="brand-mark">✦</span> MasdodAI</div>
+        <span class="eyebrow purple">BUAT AKUN</span>
+        <h2>Mulai dari sini</h2>
+        <p class="auth-subtitle">Pilih cara daftar yang paling nyaman. Kamu bisa menggunakan Google atau nomor HP.</p>
+
+        <div class="error-msg" id="errorMsg" role="alert"></div>
+
+        <a href="/api/auth/google" class="btn-google">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.23c0-.79-.07-1.55-.23-2.27H12v4.3h5.38a4.6 4.6 0 0 1-1.99 3.02v2.51h3.22c1.89-1.74 2.99-4.31 2.99-7.56z"/><path fill="#34A853" d="M12 22c2.7 0 4.96-.9 6.61-2.45l-3.22-2.51c-.9.6-2.05.96-3.39.96-2.61 0-4.82-1.76-5.61-4.13H3.06v2.59A10 10 0 0 0 12 22z"/><path fill="#FBBC05" d="M6.39 13.87A6 6 0 0 1 6.07 12c0-.65.11-1.28.32-1.87V7.54H3.06A10 10 0 0 0 2 12c0 1.61.39 3.13 1.06 4.46l3.33-2.59z"/><path fill="#EA4335" d="M12 6c1.47 0 2.79.51 3.83 1.51l2.87-2.87C16.96 2.96 14.7 2 12 2a10 10 0 0 0-8.94 5.54l3.33 2.59C7.18 7.76 9.39 6 12 6z"/></svg>
+          Daftar dengan Google
+        </a>
+
+        <div class="auth-divider"><span>atau daftar dengan nomor HP</span></div>
+
+        <form id="registerForm" class="auth-form">
+          <label class="field"><span>Nama lengkap</span><input type="text" id="name" autocomplete="name" placeholder="Contoh: Dodi Kunaedi" required /></label>
+          <label class="field"><span>Nomor HP</span><input type="tel" id="phone_number" autocomplete="tel" inputmode="tel" placeholder="08xxxxxxxxxx" required /></label>
+          <div class="form-grid-2">
+            <label class="field"><span>Password</span><input type="password" id="password" autocomplete="new-password" placeholder="Min. 6 karakter" minlength="6" required /></label>
+            <label class="field"><span>Konfirmasi</span><input type="password" id="password_confirm" autocomplete="new-password" placeholder="Ulangi password" minlength="6" required /></label>
+          </div>
+          <button type="submit" class="btn-primary" id="submitBtn"><span>Buat Akun</span><span>→</span></button>
+        </form>
+
+        <p class="switch-link">Sudah punya akun? <a href="/login.html">Masuk di sini</a></p>
+        <p class="security-note">🔒 Jangan gunakan password yang sama dengan akun penting lainnya.</p>
+      </div>
+    </section>
+  </main>
+  <script src="/js/auth.js"></script>
+  <script>
+    document.getElementById("registerForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const password = document.getElementById("password").value;
+      const confirmation = document.getElementById("password_confirm").value;
+      if (password !== confirmation) {
+        showAuthError("Konfirmasi password tidak sama.");
+        return;
+      }
+      await submitAuth("/api/auth/register", {
+        name: document.getElementById("name").value.trim(),
+        phone_number: document.getElementById("phone_number").value.trim(),
+        password
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#17172b" />
+  <title>MasdodAI | Ruang Kerja</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body class="app-page">
+  <div class="app-layout">
+    <div class="mobile-backdrop" id="mobileBackdrop"></div>
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="app-brand"><span class="brand-mark">✦</span><div><strong>MasdodAI</strong><small>Ruang kerja akademik</small></div></div>
+        <button class="btn-new-chat" id="btnNewChat"><span>＋</span> Percakapan Baru</button>
+        <label class="select-wrap"><span>Jenis karya</span><select class="jenis-select" id="jenisKarya"><option value="skripsi">Skripsi / Tugas Akhir</option><option value="jurnal">Artikel Jurnal</option><option value="makalah">Makalah</option></select></label>
+      </div>
+      <div class="history-head"><span>RIWAYAT</span><button id="refreshHistory" title="Muat ulang">↻</button></div>
+      <div class="conversation-list" id="conversationList"></div>
+      <div class="sidebar-footer">
+        <div class="user-card"><div class="user-avatar" id="userAvatar">A</div><div class="user-meta"><strong id="userName">Memuat...</strong><small id="userContact">Akun aktif</small></div><button class="user-menu" id="btnLogout" title="Keluar">↪</button></div>
+      </div>
+    </aside>
+
+    <main class="main-chat">
+      <header class="chat-topbar">
+        <div class="topbar-left"><button class="mobile-menu" id="mobileMenu" aria-label="Buka menu">☰</button><div><span class="online-dot"></span><strong id="chatTitle">Ruang Kerja Akademik</strong><small id="chatSubtitle">Pilih atau buat percakapan baru</small></div></div>
+        <div class="topbar-actions"><span class="status-pill">● AI siap</span></div>
+      </header>
+
+      <section class="chat-window" id="chatWindow">
+        <div class="welcome-state" id="welcomeState">
+          <div class="welcome-icon">✦</div>
+          <span class="eyebrow purple">ASISTEN AKADEMIK AI</span>
+          <h1>Halo, siap mengerjakan sesuatu?</h1>
+          <p>Mulai percakapan untuk menyusun skripsi, artikel jurnal, atau makalah. Kamu juga bisa melampirkan PDF, DOCX, TXT, gambar, atau video.</p>
+          <div class="quick-grid">
+            <button class="quick-card" data-prompt="Bantu saya menentukan topik dan judul skripsi yang relevan."><span>🎓</span><strong>Mulai skripsi</strong><small>Topik, judul & rumusan masalah</small></button>
+            <button class="quick-card" data-prompt="Bantu saya menyusun kerangka artikel jurnal yang sistematis."><span>📝</span><strong>Susun artikel</strong><small>Struktur & gaya akademik</small></button>
+            <button class="quick-card" data-prompt="Bantu saya membuat kerangka makalah berdasarkan topik penelitian saya."><span>📚</span><strong>Buat makalah</strong><small>Pendahuluan sampai kesimpulan</small></button>
+            <button class="quick-card" data-prompt="Saya ingin menganalisis dokumen yang akan saya unggah."><span>📎</span><strong>Analisis dokumen</strong><small>PDF, DOCX, TXT & lainnya</small></button>
+          </div>
+        </div>
+      </section>
+
+      <div class="chat-input-area">
+        <div class="attached-files" id="attachedFiles"></div>
+        <div class="input-shell">
+          <input type="file" id="fileInput" multiple hidden accept=".pdf,.doc,.docx,.txt,image/*,video/*" />
+          <button class="icon-btn" id="btnAttach" title="Lampirkan dokumen, foto, atau video">＋</button>
+          <textarea id="messageInput" rows="1" placeholder="Tulis pertanyaan tentang skripsi, jurnal, atau makalahmu..."></textarea>
+          <button class="btn-send" id="btnSend" title="Kirim">↑</button>
+        </div>
+        <div class="composer-hint"><span>Enter untuk mengirim · Shift + Enter untuk baris baru</span><span>Akademia AI dapat membuat kesalahan, tetap verifikasi referensi.</span></div>
+      </div>
+    </main>
+  </div>
+  <script src="/js/chat.js"></script>
+  <style>
+    /* Markdown rendering untuk balasan AI */
+    .bubble.md-rendered{white-space:normal;overflow-wrap:anywhere}
+    .bubble.md-rendered p{margin:0 0 10px}
+    .bubble.md-rendered p:last-child{margin-bottom:0}
+    .bubble.md-rendered strong{font-weight:800}
+    .bubble.md-rendered em{font-style:italic}
+    .bubble.md-rendered ul,.bubble.md-rendered ol{margin:7px 0 10px;padding-left:24px}
+    .bubble.md-rendered li{margin:4px 0}
+    .bubble.md-rendered h1,.bubble.md-rendered h2,.bubble.md-rendered h3{margin:12px 0 7px;line-height:1.3}
+    .bubble.md-rendered h1{font-size:1.35em}.bubble.md-rendered h2{font-size:1.2em}.bubble.md-rendered h3{font-size:1.08em}
+    .bubble.md-rendered blockquote{margin:9px 0;padding:8px 12px;border-left:3px solid #8b7dff;background:#f5f3ff;border-radius:0 8px 8px 0;color:#55566b}
+    .bubble.md-rendered code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#f1f1f6;border:1px solid #e5e5ed;border-radius:5px;padding:1px 5px;font-size:.9em}
+    .bubble.md-rendered pre{margin:10px 0;padding:12px;overflow:auto;background:#17172b;color:#f3f3fa;border-radius:10px;line-height:1.55}
+    .bubble.md-rendered pre code{background:transparent;border:0;padding:0;color:inherit}
+    .bubble.md-rendered hr{border:0;border-top:1px solid #e8e8f0;margin:12px 0}
+    .bubble.md-rendered table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.92em}
+    .bubble.md-rendered th,.bubble.md-rendered td{border:1px solid #e4e4ec;padding:7px 8px;text-align:left;vertical-align:top}
+    .bubble.md-rendered th{background:#f4f3fb;font-weight:800}
+    .bubble.md-rendered a{color:#5b4be9;text-decoration:underline}
+    .bubble.md-rendered a.doi-link{font-weight:700}
+  </style>
+  <script>
+    // Ganti renderer pesan saja. Backend, auth, upload, dan fungsi chat lainnya tetap sama.
+    window.appendMessage = function(role, content) {
+      const row = document.createElement("div");
+      row.className = "msg-row " + role;
+      if (role === "assistant") {
+        const avatar = document.createElement("div");
+        avatar.className = "ai-mini-avatar";
+        avatar.textContent = "✦";
+        row.appendChild(avatar);
+      }
+
+      const body = document.createElement("div");
+      body.className = "msg-body";
+      const bubble = document.createElement("div");
+      bubble.className = "bubble";
+
+      if (role === "assistant") {
+        bubble.classList.add("md-rendered");
+        bubble.innerHTML = renderMarkdownSafe(String(content ?? ""));
+      } else {
+        bubble.textContent = content ?? "";
+      }
+
+      body.appendChild(bubble);
+      row.appendChild(body);
+      chatWindow.appendChild(row);
+    };
+
+    function escapeMarkdownHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function inlineMarkdown(value) {
+      let s = escapeMarkdownHtml(value);
+      const stash = [];
+      const save = (html) => { stash.push(html); return `\u0000${stash.length - 1}\u0000`; };
+
+      // Inline code lebih dulu supaya tanda markdown di dalamnya tidak ikut diproses.
+      s = s.replace(/`([^`]+)`/g, (_, code) => save(`<code>${code}</code>`));
+
+      // Link Markdown.
+      s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (_, label, url) => {
+        const safeUrl = url.replace(/&amp;/g, "&");
+        return save(`<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${label}</a>`);
+      });
+
+      // URL biasa dibuat dapat diklik. DOI juga dibuat langsung menuju resolver DOI.
+      s = s.replace(/(^|\s)(https?:\/\/[^\s<]+)/g, (full, before, url) => {
+        const clean = url.replace(/[.,;:!?]+$/g, "");
+        const trailing = url.slice(clean.length);
+        return before + save(`<a href="${clean}" target="_blank" rel="noopener noreferrer">${clean}</a>`) + trailing;
+      });
+      s = s.replace(/(^|\s)(10\.\d{4,9}\/[A-Za-z0-9][A-Za-z0-9._;()\/:+-]*)(?=$|[\s.,;:!?])/g, (full, before, doi) => {
+        const href = `https://doi.org/${doi}`;
+        return before + save(`<a class="doi-link" href="${href}" target="_blank" rel="noopener noreferrer">${doi}</a>`);
+      });
+      s = s.replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>");
+      s = s.replace(/__([^_\n]+)__/g, "<strong>$1</strong>");
+      s = s.replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, "<em>$1</em>");
+      s = s.replace(/(?<!_)_([^_\n]+)_(?!_)/g, "<em>$1</em>");
+
+      s = s.replace(/\u0000(\d+)\u0000/g, (_, i) => stash[Number(i)]);
+      return s;
+    }
+
+    function renderMarkdownSafe(markdown) {
+      let text = String(markdown ?? "")
+        .replace(/\r\n?/g, "\n")
+        .replace(/<br\s*\/?>/gi, "\n")
+        .replace(/^[ \t]*---+[ \t]*$/gm, "---");
+
+      const lines = text.split("\n");
+      const out = [];
+      let i = 0;
+      let paragraph = [];
+      let listType = null;
+      let listItems = [];
+      let inCode = false;
+      let codeLang = "";
+      let codeLines = [];
+
+      const flushParagraph = () => {
+        if (!paragraph.length) return;
+        const content = paragraph.join("\n").trim();
+        if (content) out.push(`<p>${inlineMarkdown(content).replace(/\n/g, "<br>")}</p>`);
+        paragraph = [];
+      };
+      const flushList = () => {
+        if (!listType || !listItems.length) return;
+        const tag = listType === "ol" ? "ol" : "ul";
+        out.push(`<${tag}>${listItems.map(x => `<li>${inlineMarkdown(x)}</li>`).join("")}</${tag}>`);
+        listType = null;
+        listItems = [];
+      };
+      const flushCode = () => {
+        if (!inCode) return;
+        const langClass = codeLang ? ` class="language-${escapeMarkdownHtml(codeLang)}"` : "";
+        out.push(`<pre><code${langClass}>${escapeMarkdownHtml(codeLines.join("\n"))}</code></pre>`);
+        inCode = false;
+        codeLang = "";
+        codeLines = [];
+      };
+
+      while (i < lines.length) {
+        const line = lines[i];
+
+        if (/^\s*```/.test(line)) {
+          flushParagraph();
+          flushList();
+          if (!inCode) {
+            inCode = true;
+            codeLang = line.replace(/^\s*```/, "").trim();
+            codeLines = [];
+          } else {
+            flushCode();
+          }
+          i++;
+          continue;
+        }
+
+        if (inCode) {
+          codeLines.push(line);
+          i++;
+          continue;
+        }
+
+        if (/^\s*$/.test(line)) {
+          flushParagraph();
+          flushList();
+          i++;
+          continue;
+        }
+
+        const heading = line.match(/^\s*(#{1,3})\s+(.+?)\s*#*\s*$/);
+        if (heading) {
+          flushParagraph(); flushList();
+          const level = heading[1].length;
+          out.push(`<h${level}>${inlineMarkdown(heading[2])}</h${level}>`);
+          i++;
+          continue;
+        }
+
+        if (/^\s*([-*_])(?:\s*\1){2,}\s*$/.test(line)) {
+          flushParagraph(); flushList(); out.push("<hr>"); i++; continue;
+        }
+
+        const quote = line.match(/^\s*>\s?(.*)$/);
+        if (quote) {
+          flushParagraph(); flushList();
+          out.push(`<blockquote>${inlineMarkdown(quote[1])}</blockquote>`);
+          i++; continue;
+        }
+
+        const unordered = line.match(/^\s*[-*•]\s+(.+)$/);
+        const ordered = line.match(/^\s*\d+[.)]\s+(.+)$/);
+        if (unordered || ordered) {
+          flushParagraph();
+          const nextType = ordered ? "ol" : "ul";
+          if (listType && listType !== nextType) flushList();
+          listType = nextType;
+          listItems.push((unordered || ordered)[1]);
+          i++; continue;
+        }
+
+        // Tabel Markdown sederhana.
+        if (line.includes("|") && i + 1 < lines.length && /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(lines[i + 1])) {
+          flushParagraph(); flushList();
+          const parseCells = (row) => row.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map(c => c.trim());
+          const headers = parseCells(line);
+          i += 2;
+          const rows = [];
+          while (i < lines.length && lines[i].includes("|") && lines[i].trim()) {
+            rows.push(parseCells(lines[i]));
+            i++;
+          }
+          out.push(`<table><thead><tr>${headers.map(h => `<th>${inlineMarkdown(h)}</th>`).join("")}</tr></thead><tbody>${rows.map(r => `<tr>${headers.map((_, n) => `<td>${inlineMarkdown(r[n] || "")}</td>`).join("")}</tr>`).join("")}</tbody></table>`);
+          continue;
+        }
+
+        flushList();
+        paragraph.push(line);
+        i++;
+      }
+
+      flushCode();
+      flushParagraph();
+      flushList();
+      return out.join("") || "<p></p>";
+    }
+  </script>
+</body>
+</html>
