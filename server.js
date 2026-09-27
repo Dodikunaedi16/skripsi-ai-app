@@ -63,8 +63,15 @@ app.use((err, req, res, next) => {
   console.error(err);
   res.status(500).json({ error: err.message || "Terjadi kesalahan server." });
 });
+// Vercel menggunakan Express sebagai satu Function.
+// Listener hanya digunakan ketika menjalankan aplikasi secara lokal.
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`✅ Server berjalan di http://localhost:${PORT}`);
+    console.log(
+      `🤖 Ollama: ${process.env.OLLAMA_BASE_URL || "http://localhost:11434"} | model: ${process.env.OLLAMA_MODEL || "llama3"}`
+    );
+  });
+}
 
-app.listen(PORT, () => {
-  console.log(`✅ Server berjalan di http://localhost:${PORT}`);
-  console.log(`🤖 Ollama: ${process.env.OLLAMA_BASE_URL || "http://localhost:11434"} | model: ${process.env.OLLAMA_MODEL || "llama3"}`);
-});
+module.exports = app;
