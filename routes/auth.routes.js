@@ -1,17 +1,46 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
-
-// PENTING:
-// Gunakan instance passport yang sudah dikonfigurasi di config/passport.js
 const passport = require("../config/passport");
-
 const db = require("../config/database");
 
 const router = express.Router();
 
+function buildUser(user) {
+  if (!user) return null;
+
+  return {
+    id: user.id,
+    name: user.name || "",
+    phone_number: user.phone_number || null,
+    email: user.email || null,
+    avatar_url: user.avatar_url || null,
+  };
+}
+
+function saveLoginSession(req, user, res, successStatus = 200) {
+  req.session.userId = user.id;
+  req.session.user = buildUser(user);
+
+  return req.session.save((saveErr) => {
+    if (saveErr) {
+      console.error("SESSION SAVE ERROR:", saveErr);
+
+      return res.status(500).json({
+        error: "Gagal menyimpan session login.",
+      });
+    }
+
+    return res.status(successStatus).json({
+      message: "Login berhasil.",
+      user: buildUser(user),
+    });
+  });
+}
+
 // ======================================================
-// REGISTRASI VIA NOMOR HP
+// REGISTER PHONE
 // ======================================================
+
 router.post("/register", async (req, res) => {
   try {
     const { name, phone_number, password } = req.body;
@@ -23,7 +52,9 @@ router.post("/register", async (req, res) => {
     }
 
     const existing = db
-      .prepare("SELECT id FROM users WHERE phone_number = ?")
+      .prepare(
+        "SELECT id FROM users WHERE phone_number = ?"
+      )
       .get(phone_number);
 
     if (existing) {
@@ -40,16 +71,15 @@ router.post("/register", async (req, res) => {
       )
       .run(name, phone_number, password_hash);
 
-    req.session.userId = info.lastInsertRowid;
+    const user = {
+      id: info.lastInsertRowid,
+      name,
+      phone_number,
+      email: null,
+      avatar_url: null,
+    };
 
-    return res.status(201).json({
-      message: "Registrasi berhasil.",
-      user: {
-        id: info.lastInsertRowid,
-        name,
-        phone_number,
-      },
-    });
+    return saveLoginSession(req, user, res, 201);
   } catch (err) {
     console.error("REGISTER ERROR:", err);
 
@@ -60,8 +90,9 @@ router.post("/register", async (req, res) => {
 });
 
 // ======================================================
-// LOGIN VIA NOMOR HP
+// LOGIN PHONE
 // ======================================================
+
 router.post("/login", async (req, res) => {
   try {
     const { phone_number, password } = req.body;
@@ -73,7 +104,9 @@ router.post("/login", async (req, res) => {
     }
 
     const user = db
-      .prepare("SELECT * FROM users WHERE phone_number = ?")
+      .prepare(
+        "SELECT * FROM users WHERE phone_number = ?"
+      )
       .get(phone_number);
 
     if (!user || !user.password_hash) {
@@ -82,7 +115,10 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    const match = await bcrypt.compare(password, user.password_hash);
+    const match = await bcrypt.compare(
+      password,
+      user.password_hash
+    );
 
     if (!match) {
       return res.status(401).json({
@@ -90,16 +126,7 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    req.session.userId = user.id;
-
-    return res.json({
-      message: "Login berhasil.",
-      user: {
-        id: user.id,
-        name: user.name,
-        phone_number: user.phone_number,
-      },
-    });
+    return saveLoginSession(req, user, res);
   } catch (err) {
     console.error("LOGIN ERROR:", err);
 
@@ -110,59 +137,77 @@ router.post("/login", async (req, res) => {
 });
 
 // ======================================================
-// LOGIN VIA GOOGLE
+// LOGIN GOOGLE
+// Passport hanya melakukan autentikasi.
+// Session Passport sengaja dimatikan.
 // ======================================================
-router.get(
-  "/google",
-  (req, res, next) => {
-    console.log("Google OAuth: memulai autentikasi...");
 
-    passport.authenticate("google", {
-      scope: ["profile", "email"],
-      session: true,
-    })(req, res, next);
-  }
-);
+router.get("/google", (req, res, next) => {
+  console.log("Google OAuth: memulai autentikasi...");
+
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+    session: false,
+  })(req, res, next);
+});
 
 // ======================================================
 // CALLBACK GOOGLE
 // ======================================================
+
 router.get(
   "/google/callback",
   (req, res, next) => {
     passport.authenticate(
       "google",
       {
-        failureRedirect: "/login.html",
-        session: true,
+        failureRedirect: "/login.html?error=google_auth",
+        session: false,
       },
       (err, user, info) => {
         if (err) {
-          console.error("GOOGLE CALLBACK ERROR:", err);
-          return res.redirect("/login.html?error=google_auth");
+          console.error(
+            "GOOGLE CALLBACK ERROR:",
+            err
+          );
+
+          return res.redirect(
+            "/login.html?error=google_auth"
+          );
         }
 
         if (!user) {
-          console.error("Google user tidak ditemukan:", info);
-          return res.redirect("/login.html?error=google_auth");
+          console.error(
+            "Google user tidak ditemukan:",
+            info
+          );
+
+          return res.redirect(
+            "/login.html?error=google_auth"
+          );
         }
 
-        req.logIn(user, (loginErr) => {
-          if (loginErr) {
-            console.error("SESSION LOGIN ERROR:", loginErr);
-            return res.redirect("/login.html?error=session");
+        req.session.userId = user.id;
+        req.session.user = buildUser(user);
+
+        return req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error(
+              "GOOGLE SESSION SAVE ERROR:",
+              saveErr
+            );
+
+            return res.redirect(
+              "/login.html?error=session"
+            );
           }
 
-          req.session.userId = user.id;
+          console.log(
+            "GOOGLE LOGIN SESSION BERHASIL:",
+            user.id
+          );
 
-          return req.session.save((saveErr) => {
-            if (saveErr) {
-              console.error("SESSION SAVE ERROR:", saveErr);
-              return res.redirect("/login.html?error=session");
-            }
-
-            return res.redirect("/index.html");
-          });
+          return res.redirect("/index.html");
         });
       }
     )(req, res, next);
@@ -170,8 +215,9 @@ router.get(
 );
 
 // ======================================================
-// CEK SESSION / USER SAAT INI
+// CURRENT USER
 // ======================================================
+
 router.get("/me", (req, res) => {
   try {
     if (!req.session.userId) {
@@ -188,7 +234,16 @@ router.get("/me", (req, res) => {
       )
       .get(req.session.userId);
 
+    // Jika database sementara Vercel sudah kehilangan data
+    // akibat cold start, gunakan data user yang tersimpan
+    // di signed session cookie.
     if (!user) {
+      if (req.session.user) {
+        return res.json({
+          user: req.session.user,
+        });
+      }
+
       req.session.destroy(() => {});
 
       return res.status(401).json({
@@ -196,9 +251,18 @@ router.get("/me", (req, res) => {
       });
     }
 
-    return res.json({ user });
+    return res.json({
+      user: buildUser(user),
+    });
   } catch (err) {
     console.error("ME ERROR:", err);
+
+    // Fallback ke data user di session.
+    if (req.session.user) {
+      return res.json({
+        user: req.session.user,
+      });
+    }
 
     return res.status(500).json({
       error: "Terjadi kesalahan server.",
@@ -209,6 +273,7 @@ router.get("/me", (req, res) => {
 // ======================================================
 // LOGOUT
 // ======================================================
+
 router.post("/logout", (req, res) => {
   req.session.destroy((err) => {
     if (err) {
@@ -218,8 +283,6 @@ router.post("/logout", (req, res) => {
         error: "Gagal logout.",
       });
     }
-
-    res.clearCookie("connect.sid");
 
     return res.json({
       message: "Logout berhasil.",
