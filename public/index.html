@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#17172b" />
-  <title>MasdodAI | Ruang Kerja</title>
+  <title>MasdodAI | Risetmate AI</title>
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body class="app-page">
@@ -12,16 +12,79 @@
     <div class="mobile-backdrop" id="mobileBackdrop"></div>
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
-        <div class="app-brand"><span class="brand-mark">✦</span><div><strong>MasdodAI</strong><small>Ruang kerja akademik</small></div></div>
+        <div class="mobile-sidebar-head">
+          <span>RIWAYAT PERCAKAPAN</span>
+          <button class="mobile-sidebar-back" id="mobileSidebarBack" type="button" aria-label="Kembali ke chat">← Kembali</button>
+        </div>
+        <div class="app-brand"><span class="brand-mark">✦</span><div><strong>Risetmate AI</strong><small>Ruang kerja akademik</small></div></div>
         <button class="btn-new-chat" id="btnNewChat"><span>＋</span> Percakapan Baru</button>
         <label class="select-wrap"><span>Jenis karya</span><select class="jenis-select" id="jenisKarya"><option value="skripsi">Skripsi / Tugas Akhir</option><option value="jurnal">Artikel Jurnal</option><option value="makalah">Makalah</option></select></label>
       </div>
-      <div class="history-head"><span>RIWAYAT</span><button id="refreshHistory" title="Muat ulang">↻</button></div>
+      <div class="history-head">
+        <span>RIWAYAT</span>
+        <div class="history-actions">
+          <button class="history-back-btn" id="historyBackBtn" title="Kembali ke percakapan">←</button>
+          <button id="refreshHistory" title="Muat ulang">↻</button>
+        </div>
+      </div>
       <div class="conversation-list" id="conversationList"></div>
       <div class="sidebar-footer">
-        <div class="user-card"><div class="user-avatar" id="userAvatar">A</div><div class="user-meta"><strong id="userName">Memuat...</strong><small id="userContact">Akun aktif</small></div><button class="user-menu" id="btnLogout" title="Keluar">↪</button></div>
+        <button class="user-card" id="btnUserMenu" type="button" aria-expanded="false">
+          <div class="user-avatar" id="userAvatar">A</div>
+          <div class="user-meta"><strong id="userName">Memuat...</strong><small id="userContact">Akun aktif</small></div>
+          <span class="user-menu-chevron">›</span>
+        </button>
       </div>
     </aside>
+
+
+    <!-- ACCOUNT MENU -->
+    <div class="account-menu-wrap" id="accountMenuWrap">
+      <div class="account-menu" id="accountMenu" role="menu" aria-hidden="true">
+        <div class="account-menu-head">
+          <div class="user-avatar account-avatar" id="menuUserAvatar">A</div>
+          <div>
+            <strong id="menuUserName">Pengguna</strong>
+            <small id="menuUserContact">Akun aktif</small>
+          </div>
+        </div>
+
+        <button class="account-menu-item" data-panel="profile">
+          <span>◉</span><span><strong>Profil</strong><small>Informasi akun kamu</small></span>
+        </button>
+        <button class="account-menu-item" data-panel="guide">
+          <span>✦</span><span><strong>Panduan RisetMate</strong><small>Cara menggunakan ruang kerja</small></span>
+        </button>
+        <button class="account-menu-item" data-panel="settings">
+          <span>⚙</span><span><strong>Pengaturan</strong><small>Preferensi tampilan dan aplikasi</small></span>
+        </button>
+        <button class="account-menu-item" data-panel="help">
+          <span>?</span><span><strong>Pusat bantuan</strong><small>Jawaban untuk pertanyaan umum</small></span>
+        </button>
+        <button class="account-menu-item" data-panel="privacy">
+          <span>♢</span><span><strong>Privasi & keamanan</strong><small>Informasi penggunaan data</small></span>
+        </button>
+        <button class="account-menu-item" data-panel="about">
+          <span>ⓘ</span><span><strong>Tentang RisetMate</strong><small>Informasi aplikasi</small></span>
+        </button>
+
+        <div class="account-menu-divider"></div>
+        <button class="account-menu-item logout-item" id="btnLogout">
+          <span>↪</span><span><strong>Keluar</strong><small>Keluar dari akun</small></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ACCOUNT GUIDE MODAL -->
+    <div class="account-modal-backdrop" id="accountModalBackdrop">
+      <section class="account-modal" id="accountModal" role="dialog" aria-modal="true" aria-labelledby="accountModalTitle">
+        <button class="account-modal-close" id="accountModalClose" aria-label="Tutup">×</button>
+        <div class="account-modal-icon" id="accountModalIcon">✦</div>
+        <div class="account-modal-eyebrow">RisetMate AI</div>
+        <h2 id="accountModalTitle">Panduan RisetMate</h2>
+        <div id="accountModalContent"></div>
+      </section>
+    </div>
 
     <main class="main-chat">
       <header class="chat-topbar">
@@ -56,7 +119,7 @@
       </div>
     </main>
   </div>
-  <script src="/js/chat.js"></script>
+  <script src="/js/chat.js?v=20260928-attachment"></script>
   <style>
     /* Markdown rendering untuk balasan AI */
     .bubble.md-rendered{white-space:normal;overflow-wrap:anywhere}

@@ -23,7 +23,11 @@ async function init() {
     const user = me.user || {};
     document.getElementById("userName").textContent = user.name || "Pengguna";
     document.getElementById("userContact").textContent = user.phone_number || user.email || "Akun aktif";
-    document.getElementById("userAvatar").textContent = (user.name || "A").trim().charAt(0).toUpperCase();
+    const avatarLetter = (user.name || "A").trim().charAt(0).toUpperCase();
+    document.getElementById("userAvatar").textContent = avatarLetter;
+    document.getElementById("menuUserAvatar").textContent = avatarLetter;
+    document.getElementById("menuUserName").textContent = user.name || "Pengguna";
+    document.getElementById("menuUserContact").textContent = user.phone_number || user.email || "Akun aktif";
     await loadConversations();
   } catch (_) {
     window.location.href = "/login.html";
@@ -374,10 +378,143 @@ function fileIcon(mime) { return mime?.startsWith("image/") ? "🖼️" : mime?.
 
 // ============ MOBILE ============
 document.getElementById("mobileMenu").addEventListener("click", () => document.getElementById("sidebar").classList.add("open"));
+document.getElementById("mobileSidebarBack").addEventListener("click", closeMobileMenu);
 document.getElementById("mobileBackdrop").addEventListener("click", closeMobileMenu);
+document.getElementById("historyBackBtn").addEventListener("click", closeMobileMenu);
 function closeMobileMenu() { document.getElementById("sidebar").classList.remove("open"); }
 
+const accountMenuWrap = document.getElementById("accountMenuWrap");
+const accountMenu = document.getElementById("accountMenu");
+const accountModalBackdrop = document.getElementById("accountModalBackdrop");
+const accountModalTitle = document.getElementById("accountModalTitle");
+const accountModalContent = document.getElementById("accountModalContent");
+const accountModalIcon = document.getElementById("accountModalIcon");
+
+const accountPanels = {
+  profile: {
+    icon: "◉",
+    title: "Profil",
+    html: `
+      <div class="account-info-row"><span>Nama</span><span id="profileName">-</span></div>
+      <div class="account-info-row"><span>Email / kontak</span><span id="profileContact">-</span></div>
+      <div class="account-note">Profil digunakan untuk mengenali akun kamu di RisetMate. Perubahan data profil dapat ditambahkan pada tahap berikutnya.</div>
+    `
+  },
+  guide: {
+    icon: "✦",
+    title: "Panduan RisetMate",
+    html: `
+      <div class="account-guide-grid">
+        <div class="guide-card"><strong>🎓 Mulai skripsi</strong><p>Pilih jenis karya, buat percakapan baru, lalu tuliskan topik atau masalah penelitian.</p></div>
+        <div class="guide-card"><strong>📝 Artikel jurnal</strong><p>Pilih Artikel Jurnal agar percakapan dan panduan kerja menggunakan konteks jurnal.</p></div>
+        <div class="guide-card"><strong>📚 Makalah</strong><p>Gunakan mode Makalah untuk menyusun struktur dari pendahuluan sampai kesimpulan.</p></div>
+        <div class="guide-card"><strong>📎 Lampirkan file</strong><p>Tambahkan PDF, DOCX, TXT, gambar, atau video sebelum mengirim pertanyaan.</p></div>
+        <div class="guide-card"><strong>📌 Sematkan riwayat</strong><p>Sematkan percakapan penting supaya tetap berada di bagian atas daftar riwayat.</p></div>
+        <div class="guide-card"><strong>💬 Lanjutkan percakapan</strong><p>Buka riwayat kapan saja untuk melanjutkan pekerjaan dari percakapan sebelumnya.</p></div>
+      </div>
+      <div class="account-note">Gunakan RisetMate sebagai pendamping penelitian. Tetap periksa referensi, data, dan hasil yang diberikan AI sebelum digunakan dalam karya akademik.</div>
+    `
+  },
+  settings: {
+    icon: "⚙",
+    title: "Pengaturan",
+    html: `
+      <div class="account-info-row"><span>Tampilan</span><span>Mengikuti pengaturan browser</span></div>
+      <div class="account-info-row"><span>Bahasa</span><span>Bahasa Indonesia</span></div>
+      <div class="account-info-row"><span>Notifikasi</span><span>Belum diaktifkan</span></div>
+      <div class="account-note">Pengaturan lanjutan seperti tema, bahasa, dan notifikasi dapat ditambahkan tanpa mengubah data percakapan.</div>
+    `
+  },
+  help: {
+    icon: "?",
+    title: "Pusat bantuan",
+    html: `
+      <ul class="account-help-list">
+        <li><strong>Bagaimana memulai?</strong> Pilih jenis karya lalu tekan Percakapan Baru.</li>
+        <li><strong>Bagaimana membuka riwayat?</strong> Buka menu riwayat dan pilih percakapan yang ingin dilanjutkan.</li>
+        <li><strong>Bagaimana melampirkan dokumen?</strong> Tekan tombol ＋ di area input dan pilih file.</li>
+        <li><strong>File apa yang bisa digunakan?</strong> PDF, DOC, DOCX, TXT, gambar, dan video.</li>
+        <li><strong>Jawaban AI kurang tepat?</strong> Berikan konteks, dokumen, atau pertanyaan yang lebih spesifik lalu verifikasi hasilnya.</li>
+      </ul>
+    `
+  },
+  privacy: {
+    icon: "♢",
+    title: "Privasi & keamanan",
+    html: `
+      <div class="account-info-row"><span>Autentikasi</span><span>Session akun terenkripsi</span></div>
+      <div class="account-info-row"><span>Riwayat</span><span>Terkait dengan akun kamu</span></div>
+      <div class="account-info-row"><span>File unggahan</span><span>Diproses untuk percakapan</span></div>
+      <div class="account-note">Jangan mengunggah password, API key, token, atau informasi rahasia ke dalam percakapan. Gunakan hanya dokumen yang memang diperlukan untuk penelitian.</div>
+    `
+  },
+  about: {
+    icon: "ⓘ",
+    title: "Tentang RisetMate",
+    html: `
+      <div class="account-info-row"><span>Aplikasi</span><span>RisetMate AI</span></div>
+      <div class="account-info-row"><span>Fungsi</span><span>Asisten ruang kerja akademik</span></div>
+      <div class="account-info-row"><span>Fokus</span><span>Skripsi, jurnal, makalah & dokumen</span></div>
+      <div class="account-note">RisetMate dirancang untuk membantu proses akademik, bukan menggantikan penilaian dan tanggung jawab penulis.</div>
+    `
+  }
+};
+
+function openAccountMenu() {
+  accountMenuWrap.classList.add("open");
+  document.getElementById("btnUserMenu").setAttribute("aria-expanded", "true");
+  accountMenu.setAttribute("aria-hidden", "false");
+}
+function closeAccountMenu() {
+  accountMenuWrap.classList.remove("open");
+  document.getElementById("btnUserMenu").setAttribute("aria-expanded", "false");
+  accountMenu.setAttribute("aria-hidden", "true");
+}
+function openAccountPanel(key) {
+  const panel = accountPanels[key];
+  if (!panel) return;
+  const me = {
+    name: document.getElementById("userName").textContent,
+    contact: document.getElementById("userContact").textContent
+  };
+  accountModalIcon.textContent = panel.icon;
+  accountModalTitle.textContent = panel.title;
+  accountModalContent.innerHTML = panel.html;
+  const profileName = document.getElementById("profileName");
+  const profileContact = document.getElementById("profileContact");
+  if (profileName) profileName.textContent = me.name;
+  if (profileContact) profileContact.textContent = me.contact;
+  closeAccountMenu();
+  accountModalBackdrop.classList.add("open");
+}
+function closeAccountPanel() {
+  accountModalBackdrop.classList.remove("open");
+}
+
+document.getElementById("btnUserMenu").addEventListener("click", (e) => {
+  e.stopPropagation();
+  if (accountMenuWrap.classList.contains("open")) closeAccountMenu();
+  else openAccountMenu();
+});
+accountMenuWrap.addEventListener("click", (e) => {
+  if (e.target === accountMenuWrap) closeAccountMenu();
+});
+accountMenu.querySelectorAll(".account-menu-item[data-panel]").forEach((button) => {
+  button.addEventListener("click", () => openAccountPanel(button.dataset.panel));
+});
+document.getElementById("accountModalClose").addEventListener("click", closeAccountPanel);
+accountModalBackdrop.addEventListener("click", (e) => {
+  if (e.target === accountModalBackdrop) closeAccountPanel();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    closeAccountMenu();
+    closeAccountPanel();
+  }
+});
+
 document.getElementById("btnLogout").addEventListener("click", async () => {
+  closeAccountMenu();
   await fetch("/api/auth/logout", { method: "POST" });
   window.location.href = "/login.html";
 });
