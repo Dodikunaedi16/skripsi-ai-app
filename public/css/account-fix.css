@@ -1,0 +1,63 @@
+/* =========================================================
+   ACCOUNT MENU + GUIDES
+   ========================================================= */
+.history-actions{display:flex;align-items:center;gap:4px}
+.history-back-btn{display:none!important}
+.user-card{width:100%;border:0;text-align:left;cursor:pointer;color:inherit}
+.user-card:hover{background:#292943}
+.user-menu-chevron{font-size:22px;line-height:1;color:#85869c;transition:.18s}
+.user-card[aria-expanded="true"] .user-menu-chevron{transform:rotate(90deg);color:#fff}
+
+.account-menu-wrap{position:fixed;inset:0;z-index:90;pointer-events:none}
+.account-menu-wrap.open{pointer-events:auto}
+.account-menu-wrap.open::before{content:"";position:absolute;inset:0;background:rgba(5,5,15,.18)}
+.account-menu{position:absolute;left:18px;bottom:76px;width:310px;max-width:calc(100vw - 36px);padding:10px;border:1px solid rgba(255,255,255,.08);border-radius:18px;background:#24243a;box-shadow:0 22px 70px rgba(0,0,0,.38);opacity:0;transform:translateY(8px) scale(.98);transition:.18s;pointer-events:none}
+.account-menu-wrap.open .account-menu{opacity:1;transform:none;pointer-events:auto}
+.account-menu-head{display:flex;align-items:center;gap:11px;padding:10px 10px 13px;margin-bottom:4px;border-bottom:1px solid rgba(255,255,255,.08)}
+.account-avatar{width:40px;height:40px;border-radius:12px}
+.account-menu-head strong{display:block;color:#fff;font-size:13px}
+.account-menu-head small{display:block;color:#999ab0;font-size:10px;margin-top:3px;max-width:205px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.account-menu-item{width:100%;display:flex;align-items:center;gap:12px;border:0;background:transparent;color:#d8d8e4;border-radius:11px;padding:10px;cursor:pointer;text-align:left}
+.account-menu-item:hover{background:#30304a;color:#fff}
+.account-menu-item>span:first-child{width:24px;flex:0 0 24px;text-align:center;font-size:17px;color:#aaa9c1}
+.account-menu-item strong{display:block;font-size:12px;font-weight:750}
+.account-menu-item small{display:block;color:#85869d;font-size:9px;margin-top:2px}
+.account-menu-item:hover small{color:#b9b9cb}
+.account-menu-divider{height:1px;background:rgba(255,255,255,.08);margin:5px 8px}
+.account-menu-item.logout-item{color:#ffb6b6}
+.account-menu-item.logout-item>span:first-child{color:#ff9d9d}
+
+.account-modal-backdrop{position:fixed;inset:0;z-index:120;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(8,8,20,.48);backdrop-filter:blur(6px)}
+.account-modal-backdrop.open{display:flex}
+.account-modal{position:relative;width:min(640px,100%);max-height:min(760px,90vh);overflow:auto;background:#fff;border:1px solid #e8e8ef;border-radius:22px;padding:30px;box-shadow:0 30px 90px rgba(25,22,65,.25)}
+.account-modal-close{position:absolute;right:15px;top:15px;width:34px;height:34px;border:0;border-radius:10px;background:#f1f1f6;color:#66677a;font-size:22px;cursor:pointer}
+.account-modal-close:hover{background:#e6e6ef;color:#222}
+.account-modal-icon{width:48px;height:48px;border-radius:15px;display:grid;place-items:center;background:linear-gradient(135deg,#7465ff,#5a4be2);color:#fff;font-size:21px;margin-bottom:12px}
+.account-modal-eyebrow{color:#7063e9;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+.account-modal h2{margin:4px 0 16px;font-size:26px;letter-spacing:-.035em;color:#27283a}
+.account-guide-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+.guide-card{padding:14px;border:1px solid #e8e8ef;border-radius:14px;background:#fafafd}
+.guide-card strong{display:block;font-size:12px;color:#303144;margin-bottom:5px}
+.guide-card p{margin:0;color:#77788b;font-size:11px;line-height:1.6}
+.account-info-row{display:flex;justify-content:space-between;gap:15px;padding:13px 0;border-bottom:1px solid #ededf2;font-size:12px}
+.account-info-row span:first-child{color:#858698}
+.account-info-row span:last-child{color:#303144;font-weight:650;text-align:right}
+.account-help-list{margin:0;padding-left:20px;color:#626376;font-size:12px;line-height:1.8}
+.account-help-list li{margin:6px 0}
+.account-note{padding:13px 14px;border-radius:13px;background:#f5f3ff;color:#6259a9;font-size:11px;line-height:1.65;margin-top:14px}
+.account-modal a{color:#5c50d9}
+
+@media(max-width:720px){
+  .history-back-btn{display:inline-grid!important}
+  .account-menu{left:10px;right:10px;bottom:82px;width:auto;max-width:none}
+  .account-modal-backdrop{padding:12px}
+  .account-modal{border-radius:18px;padding:24px 18px;max-height:88vh}
+  .account-modal h2{font-size:23px}
+  .account-guide-grid{grid-template-columns:1fr}
+}
+/* Defensive fixes */
+.account-menu-wrap,.account-modal-backdrop{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.account-menu-item,.user-card,.account-modal-close{appearance:none;-webkit-appearance:none}
+.account-menu-item span{pointer-events:none}
+.account-menu-wrap *,.account-modal-backdrop *{box-sizing:border-box}
+.account-menu{max-height:calc(100dvh - 96px);overflow:auto}
