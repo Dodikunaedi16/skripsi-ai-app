@@ -1,5 +1,6 @@
 let currentConversationId = null;
 let pendingFileIds = [];
+let pendingAttachments = [];
 let busy = false;
 
 const chatWindow = document.getElementById("chatWindow");
@@ -34,42 +35,123 @@ async function init() {
   }
 }
 
+function getLocalPinnedIds() {
+  try {
+    const value = JSON.parse(localStorage.getItem("risetmate:pinned-conversations") || "[]");
+    return new Set(Array.isArray(value) ? value.map(String) : []);
+  } catch (_) {
+    return new Set();
+  }
+}
+
+function saveLocalPinnedIds(set) {
+  try {
+    localStorage.setItem("risetmate:pinned-conversations", JSON.stringify([...set]));
+  } catch (_) {}
+}
+
 async function loadConversations() {
   try {
     const data = await api("/api/conversations");
     conversationList.innerHTML = "";
-    if (!data.conversations.length) {
+
+    const localPinned = getLocalPinnedIds();
+    const conversations = Array.isArray(data.conversations) ? data.conversations.map((c) => ({
+      ...c,
+      pinned: Boolean(c.pinned) || localPinned.has(String(c.id))
+    })) : [];
+    const pinned = conversations.filter((c) => Boolean(c.pinned));
+    const recent = conversations.filter((c) => !Boolean(c.pinned));
+
+    if (!conversations.length) {
       const empty = document.createElement("div");
       empty.className = "history-empty";
-      empty.textContent = "Belum ada percakapan.";
+      empty.innerHTML = "<strong>Belum ada percakapan</strong><small>Buat percakapan baru untuk mulai bekerja.</small>";
       conversationList.appendChild(empty);
       return;
     }
 
-    data.conversations.forEach((conv) => {
-      const item = document.createElement("div");
-      item.className = "conv-item" + (conv.id === currentConversationId ? " active" : "");
-      item.innerHTML = `<span class="conv-icon">${conv.jenis_karya === "jurnal" ? "📝" : conv.jenis_karya === "makalah" ? "📚" : "🎓"}</span><span class="conv-title">${escapeHtml(conv.title)}</span><button class="del-btn" data-id="${conv.id}" title="Hapus">×</button>`;
-      item.addEventListener("click", (e) => {
-        if (e.target.closest(".del-btn") || busy) return;
-        openConversation(conv.id, conv.title);
-      });
-      item.querySelector(".del-btn").addEventListener("click", async (e) => {
-        e.stopPropagation();
-        if (busy || !confirm("Hapus percakapan ini?")) return;
-        try {
-          await api(`/api/conversations/${conv.id}`, { method: "DELETE" });
-          if (currentConversationId === conv.id) resetWorkspace();
-          await loadConversations();
-        } catch (err) {
-          appendMessage("assistant", "⚠️ " + err.message);
-        }
-      });
-      conversationList.appendChild(item);
-    });
+    if (pinned.length) {
+      appendHistoryGroup("SEMATAN", pinned);
+    }
+    if (recent.length) {
+      appendHistoryGroup(pinned.length ? "RIWAYAT TERBARU" : "RIWAYAT", recent);
+    }
   } catch (err) {
     console.error(err);
+    conversationList.innerHTML = `<div class="history-empty"><strong>Riwayat tidak dapat dimuat</strong><small>${escapeHtml(err.message || "Coba muat ulang.")}</small></div>`;
   }
+}
+
+function appendHistoryGroup(label, conversations) {
+  const group = document.createElement("div");
+  group.className = "history-group";
+
+  const heading = document.createElement("div");
+  heading.className = "history-group-title";
+  heading.textContent = label;
+  group.appendChild(heading);
+
+  conversations.forEach((conv) => {
+    const item = document.createElement("div");
+    item.className = "conv-item" + (conv.id === currentConversationId ? " active" : "");
+    item.dataset.id = conv.id;
+
+    const icon = conv.jenis_karya === "jurnal" ? "📝" : conv.jenis_karya === "makalah" ? "📚" : "🎓";
+    item.innerHTML = `
+      <span class="conv-icon">${icon}</span>
+      <span class="conv-title" title="${escapeHtml(conv.title)}">${escapeHtml(conv.title)}</span>
+      <div class="conv-actions">
+        <button class="pin-btn ${conv.pinned ? "is-pinned" : ""}" data-id="${conv.id}" title="${conv.pinned ? "Lepas sematan" : "Sematkan percakapan"}" aria-label="${conv.pinned ? "Lepas sematan" : "Sematkan percakapan"}">${conv.pinned ? "📌" : "☆"}</button>
+        <button class="del-btn" data-id="${conv.id}" title="Hapus" aria-label="Hapus percakapan">×</button>
+      </div>`;
+
+    item.addEventListener("click", (e) => {
+      if (e.target.closest(".pin-btn") || e.target.closest(".del-btn") || busy) return;
+      openConversation(conv.id, conv.title);
+    });
+
+    const pinBtn = item.querySelector(".pin-btn");
+    pinBtn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      if (busy) return;
+      try {
+        pinBtn.disabled = true;
+        const nextPinned = !conv.pinned;
+        await api(`/api/conversations/${conv.id}/pin`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pinned: nextPinned })
+        });
+        const localPinned = getLocalPinnedIds();
+        if (nextPinned) localPinned.add(String(conv.id));
+        else localPinned.delete(String(conv.id));
+        saveLocalPinnedIds(localPinned);
+        await loadConversations();
+      } catch (err) {
+        console.error(err);
+        appendMessage("assistant", "⚠️ Gagal mengubah sematan: " + err.message);
+      } finally {
+        pinBtn.disabled = false;
+      }
+    });
+
+    item.querySelector(".del-btn").addEventListener("click", async (e) => {
+      e.stopPropagation();
+      if (busy || !confirm("Hapus percakapan ini?")) return;
+      try {
+        await api(`/api/conversations/${conv.id}`, { method: "DELETE" });
+        if (currentConversationId === conv.id) resetWorkspace();
+        await loadConversations();
+      } catch (err) {
+        appendMessage("assistant", "⚠️ " + err.message);
+      }
+    });
+
+    group.appendChild(item);
+  });
+
+  conversationList.appendChild(group);
 }
 
 const titleMap = {
@@ -110,22 +192,54 @@ async function openConversation(id, title) {
   currentConversationId = id;
   chatTitle.textContent = title;
   chatSubtitle.textContent = "Memuat percakapan...";
+  pendingFileIds = [];
+  pendingAttachments = [];
+  attachedFilesEl.innerHTML = "";
 
   try {
     const data = await api(`/api/conversations/${id}`);
     chatWindow.innerHTML = "";
     chatSubtitle.textContent = "Percakapan tersimpan di riwayat";
+
+    const files = Array.isArray(data.files) ? data.files : [];
+    const fileMap = new Map(files.map((f) => [String(f.id), f]));
+    const usedFileIds = new Set();
+
     if (!data.messages.length) {
       renderConversationWelcome(data.conversation.jenis_karya);
     } else {
-      data.messages.forEach((m) => appendMessage(m.role, m.content));
+      data.messages.forEach((m) => {
+        const ids = Array.isArray(m.file_ids) ? m.file_ids : [];
+        const attachments = ids.map((id) => fileMap.get(String(id))).filter(Boolean);
+        ids.forEach((id) => usedFileIds.add(String(id)));
+        appendMessage(m.role, m.content, attachments);
+      });
     }
+
+    // File dari versi lama yang belum punya file_ids tetap ditampilkan.
+    const unassigned = files.filter((f) => !usedFileIds.has(String(f.id)));
+    if (unassigned.length) {
+      renderConversationFiles(unassigned);
+    }
+
     scrollToBottom();
     closeMobileMenu();
     await loadConversations();
   } catch (err) {
     appendMessage("assistant", "⚠️ " + err.message);
   }
+}
+
+function renderConversationFiles(files) {
+  if (!files?.length) return;
+  const section = document.createElement("div");
+  section.className = "conversation-files-panel";
+  section.innerHTML = `<div class="conversation-files-title">📎 Dokumen percakapan</div>`;
+  const grid = document.createElement("div");
+  grid.className = "conversation-files-grid";
+  files.forEach((file) => grid.appendChild(createAttachmentCard(file, false)));
+  section.appendChild(grid);
+  chatWindow.appendChild(section);
 }
 
 function renderConversationWelcome(type = "skripsi") {
@@ -140,6 +254,7 @@ function renderConversationWelcome(type = "skripsi") {
 function resetWorkspace() {
   currentConversationId = null;
   pendingFileIds = [];
+  pendingAttachments = [];
   attachedFilesEl.innerHTML = "";
   chatTitle.textContent = "Ruang Kerja Akademik";
   chatSubtitle.textContent = "Pilih atau buat percakapan baru";
@@ -209,18 +324,28 @@ fileInput.addEventListener("change", async () => {
   if (!fileInput.files.length || busy) return;
   if (!currentConversationId) await createConversation(false, true);
 
+  const selectedFiles = Array.from(fileInput.files);
   const formData = new FormData();
-  for (const file of fileInput.files) formData.append("files", file);
+
+  for (const file of selectedFiles) formData.append("files", file);
   formData.append("conversation_id", currentConversationId);
 
   try {
     const data = await api("/api/upload", { method: "POST", body: formData });
-    data.files.forEach((f) => {
+
+    data.files.forEach((f, index) => {
+      const localFile = selectedFiles[index];
+
+      const attachment = {
+        id: f.id,
+        original_name: f.original_name || localFile?.name || "File",
+        mimetype: f.mimetype || localFile?.type || "application/octet-stream",
+        filesize: f.filesize || localFile?.size || 0
+      };
+
       pendingFileIds.push(f.id);
-      const chip = document.createElement("span");
-      chip.className = "file-chip";
-      chip.textContent = `${fileIcon(f.mimetype)} ${f.original_name}`;
-      attachedFilesEl.appendChild(chip);
+      pendingAttachments.push(attachment);
+      renderPendingAttachment(attachment);
     });
   } catch (err) {
     appendMessage("assistant", "⚠️ " + err.message);
@@ -229,16 +354,98 @@ fileInput.addEventListener("change", async () => {
   }
 });
 
+function renderPendingAttachment(file) {
+  const card = createAttachmentCard(file, true);
+  attachedFilesEl.appendChild(card);
+}
+
+function createAttachmentCard(file, removable = false) {
+  const card = document.createElement("div");
+  card.className = "attachment-card";
+
+  const icon = document.createElement("div");
+  icon.className = "attachment-icon";
+  icon.textContent = fileIcon(file.mimetype);
+
+  const meta = document.createElement("div");
+  meta.className = "attachment-meta";
+
+  const name = document.createElement("div");
+  name.className = "attachment-name";
+  name.textContent = file.original_name || "File";
+
+  const type = document.createElement("div");
+  type.className = "attachment-type";
+  type.textContent = `${fileTypeLabel(file.mimetype)}${file.filesize ? " · " + formatFileSize(file.filesize) : ""}`;
+
+  meta.appendChild(name);
+  meta.appendChild(type);
+
+  card.appendChild(icon);
+  card.appendChild(meta);
+
+  if (removable) {
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "attachment-remove";
+    remove.title = "Hapus lampiran";
+    remove.textContent = "×";
+    remove.addEventListener("click", () => {
+      const index = pendingAttachments.findIndex((item) => String(item.id) === String(file.id));
+      if (index !== -1) {
+        pendingAttachments.splice(index, 1);
+        pendingFileIds.splice(index, 1);
+      }
+      card.remove();
+    });
+    card.appendChild(remove);
+  }
+
+  return card;
+}
+
+function renderMessageAttachments(attachments) {
+  if (!attachments?.length) return null;
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "message-attachments";
+
+  attachments.forEach((file) => {
+    wrapper.appendChild(createAttachmentCard(file, false));
+  });
+
+  return wrapper;
+}
+
+function fileTypeLabel(mime = "") {
+  if (mime.startsWith("image/")) return "Gambar";
+  if (mime.startsWith("video/")) return "Video";
+  if (mime.includes("pdf")) return "Dokumen PDF";
+  if (mime.includes("word") || mime.includes("document")) return "Dokumen";
+  if (mime.includes("text")) return "Dokumen teks";
+  return "Dokumen";
+}
+
+function formatFileSize(bytes) {
+  const size = Number(bytes) || 0;
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 async function sendMessage() {
-  const text = messageInput.value.trim();
-  if (!text || busy) return;
+  let text = messageInput.value.trim();
+  if (!text && !pendingFileIds.length) return;
+  if (!text && pendingFileIds.length) text = "Tolong analisis dokumen yang saya lampirkan.";
+  if (busy) return;
   if (!currentConversationId) await createConversation(false, true);
 
   busy = true;
   const btnSend = document.getElementById("btnSend");
   btnSend.disabled = true;
 
-  appendMessage("user", text);
+  const sentAttachments = pendingAttachments.map((file) => ({ ...file }));
+  appendMessage("user", text, sentAttachments);
   messageInput.value = "";
   autoResize();
   scrollToBottom();
@@ -265,7 +472,9 @@ async function sendMessage() {
   } finally {
     btnSend.disabled = false;
     pendingFileIds = [];
+    pendingAttachments = [];
     attachedFilesEl.innerHTML = "";
+    fileInput.value = "";
     busy = false;
     scrollToBottom();
   }
@@ -287,7 +496,7 @@ function autoResize() {
   messageInput.style.height = Math.min(messageInput.scrollHeight, 150) + "px";
 }
 
-function appendMessage(role, content) {
+function appendMessage(role, content, attachments = []) {
   const row = document.createElement("div");
   row.className = "msg-row " + role;
   if (role === "assistant") {
@@ -306,6 +515,11 @@ function appendMessage(role, content) {
     bubble.innerHTML = renderMarkdown(String(content ?? ""));
   } else {
     bubble.textContent = String(content ?? "");
+  }
+
+  if (role === "user" && attachments.length) {
+    const attachmentWrapper = renderMessageAttachments(attachments);
+    if (attachmentWrapper) body.appendChild(attachmentWrapper);
   }
 
   body.appendChild(bubble);
@@ -374,14 +588,34 @@ function renderMarkdown(source) {
 
 function scrollToBottom() { chatWindow.scrollTop = chatWindow.scrollHeight; }
 function escapeHtml(str) { const div = document.createElement("div"); div.textContent = str; return div.innerHTML; }
-function fileIcon(mime) { return mime?.startsWith("image/") ? "🖼️" : mime?.startsWith("video/") ? "🎥" : "📄"; }
+function fileIcon(mime = "") {
+  if (mime.startsWith("image/")) return "🖼️";
+  if (mime.startsWith("video/")) return "🎥";
+  if (mime.includes("pdf")) return "📕";
+  if (mime.includes("word") || mime.includes("document")) return "📘";
+  if (mime.includes("sheet") || mime.includes("excel")) return "📗";
+  if (mime.includes("presentation") || mime.includes("powerpoint")) return "📙";
+  return "📄";
+}
 
 // ============ MOBILE ============
-document.getElementById("mobileMenu").addEventListener("click", () => document.getElementById("sidebar").classList.add("open"));
+const mobileSidebar = document.getElementById("sidebar");
+const mobileBackdrop = document.getElementById("mobileBackdrop");
+const mobileMenuBtn = document.getElementById("mobileMenu");
+function openMobileMenu() {
+  mobileSidebar.classList.add("open");
+  mobileBackdrop.classList.add("open");
+  document.body.classList.add("mobile-drawer-open");
+}
+function closeMobileMenu() {
+  mobileSidebar.classList.remove("open");
+  mobileBackdrop.classList.remove("open");
+  document.body.classList.remove("mobile-drawer-open");
+}
+mobileMenuBtn.addEventListener("click", openMobileMenu);
 document.getElementById("mobileSidebarBack").addEventListener("click", closeMobileMenu);
-document.getElementById("mobileBackdrop").addEventListener("click", closeMobileMenu);
+mobileBackdrop.addEventListener("click", closeMobileMenu);
 document.getElementById("historyBackBtn").addEventListener("click", closeMobileMenu);
-function closeMobileMenu() { document.getElementById("sidebar").classList.remove("open"); }
 
 const accountMenuWrap = document.getElementById("accountMenuWrap");
 const accountMenu = document.getElementById("accountMenu");
